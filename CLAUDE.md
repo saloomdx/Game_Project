@@ -58,10 +58,15 @@ Each game is a **single HTML file** following this structure:
 
 The repo is on GitHub at `https://github.com/saloomdx/Game_Project`.
 
-After making changes, commit and push:
+**Commit and push after every meaningful unit of work** — completing a feature, fixing a bug, creating a new file, or making any change worth keeping. Never leave work uncommitted at the end of a session. This ensures we can always revert to a safe state.
 
 ```bash
 git add <files>
 git commit -m "descriptive message"
 git push
 ```
+
+Commit message format:
+- Use the imperative mood: `Add`, `Fix`, `Update`, `Remove`
+- Be specific: `Fix shooter enemy spawn rate on level 3` not `Fix bug`
+- Keep the subject line under 72 characters
