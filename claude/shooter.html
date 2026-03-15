@@ -109,7 +109,7 @@ function initGame() {
 }
 
 function totalEnemiesForLevel(lv) { return 8 + lv * 4; }
-function spawnIntervalForLevel(lv) { return Math.max(20, 80 - lv * 8); }
+function spawnIntervalForLevel(lv) { return Math.max(35, 110 - lv * 8); }
 
 // ─── Enemy Definitions ───────────────────────────────────────────────────────
 function enemyTypes(lv) {
@@ -133,10 +133,10 @@ function createEnemy(lv) {
   else { x = -30; y = Math.random() * 600; }
 
   const defs = {
-    basic:   { r: 12, hp: 2,  speed: 0.6,  color: '#ff4444', score: 10, shootTimer: 0, shootInterval: 0 },
-    fast:    { r: 9,  hp: 1,  speed: 1.1,  color: '#ff9900', score: 15, shootTimer: 0, shootInterval: 0 },
-    shooter: { r: 14, hp: 3,  speed: 0.45, color: '#cc44ff', score: 25, shootTimer: 0, shootInterval: 90 },
-    tank:    { r: 20, hp: 10, speed: 0.3,  color: '#44ffcc', score: 50, shootTimer: 0, shootInterval: 0 }
+    basic:   { r: 12, hp: 2,  speed: 0.32, color: '#ff4444', score: 10, shootTimer: 0, shootInterval: 0 },
+    fast:    { r: 9,  hp: 1,  speed: 0.6,  color: '#ff9900', score: 15, shootTimer: 0, shootInterval: 0 },
+    shooter: { r: 14, hp: 3,  speed: 0.22, color: '#cc44ff', score: 25, shootTimer: 0, shootInterval: 150 },
+    tank:    { r: 20, hp: 10, speed: 0.15, color: '#44ffcc', score: 50, shootTimer: 0, shootInterval: 0 }
   };
 
   const def = defs[type];
@@ -185,8 +185,8 @@ function enemyShoot(e) {
       enemyBullets.push({
         x: e.x + Math.cos(a) * (e.r + 5),
         y: e.y + Math.sin(a) * (e.r + 5),
-        vx: Math.cos(a) * 4,
-        vy: Math.sin(a) * 4,
+        vx: Math.cos(a) * 2.2,
+        vy: Math.sin(a) * 2.2,
         r: 4,
         trail: []
       });
