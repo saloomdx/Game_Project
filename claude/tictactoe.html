@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      color: #eee;
+    }
+
+    .container {
+      text-align: center;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      letter-spacing: 4px;
+      margin-bottom: 10px;
+      color: #e94560;
+      text-shadow: 0 0 20px rgba(233,69,96,0.5);
+    }
+
+    #status {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      height: 1.5em;
+      color: #a8dadc;
+      letter-spacing: 1px;
+    }
+
+    .scores {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+
+    .score-box {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 8px 24px;
+      min-width: 80px;
+    }
+
+    .score-box .label {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    .score-box .value {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    #scoreX  .value { color: #e94560; }
+    #scoreTie .value { color: #f4a261; }
+    #scoreO  .value { color: #457b9d; }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      border-radius: 16px;
+      cursor: pointer;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    button {
+      background: rgba(255,255,255,0.06);
+      color: #ccc;
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    button:hover {
+      background: rgba(233,69,96,0.2);
+      color: #fff;
+      border-color: #e94560;
+    }
+
+    #modeBtn {
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>TIC-TAC-TOE</h1>
+  <div id="status">X's turn</div>
+
+  <div class="scores">
+    <div class="score-box" id="scoreX">
+      <div class="label">X Wins</div>
+      <div class="value" id="xWins">0</div>
+    </div>
+    <div class="score-box" id="scoreTie">
+      <div class="label">Ties</div>
+      <div class="value" id="ties">0</div>
+    </div>
+    <div class="score-box" id="scoreO">
+      <div class="label">O Wins</div>
+      <div class="value" id="oWins">0</div>
+    </div>
+  </div>
+
+  <canvas id="board" width="360" height="360"></canvas>
+
+  <div class="buttons">
+    <button id="resetBtn" onclick="resetGame()">New Game</button>
+    <button id="modeBtn" onclick="toggleMode()">vs CPU: OFF</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const SIZE = 360;
+const CELL = SIZE / 3;
+
+let board = Array(9).fill(null);
+let currentPlayer = 'X';
+let gameOver = false;
+let vsComputer = false;
+let scores = { X: 0, O: 0, tie: 0 };
+let winLine = null;
+let animFrame = 0;
+
+const WINS = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function checkWinner(b) {
+  for (const [a, c, d] of WINS) {
+    if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a, c, d] };
+  }
+  if (b.every(c => c)) return { winner: 'tie', line: null };
+  return null;
+}
+
+// Minimax for CPU
+function minimax(b, isMax) {
+  const res = checkWinner(b);
+  if (res) {
+    if (res.winner === 'O') return 10;
+    if (res.winner === 'X') return -10;
+    return 0;
+  }
+  const scores = [];
+  for (let i = 0; i < 9; i++) {
+    if (!b[i]) {
+      b[i] = isMax ? 'O' : 'X';
+      scores.push(minimax(b, !isMax));
+      b[i] = null;
+    }
+  }
+  return isMax ? Math.max(...scores) : Math.min(...scores);
+}
+
+function bestMove(b) {
+  let best = -Infinity, move = -1;
+  for (let i = 0; i < 9; i++) {
+    if (!b[i]) {
+      b[i] = 'O';
+      const s = minimax(b, false);
+      b[i] = null;
+      if (s > best) { best = s; move = i; }
+    }
+  }
+  return move;
+}
+
+function cellCenter(i) {
+  const col = i % 3, row = Math.floor(i / 3);
+  return { x: col * CELL + CELL / 2, y: row * CELL + CELL / 2 };
+}
+
+function draw() {
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  // Background
+  ctx.fillStyle = '#16213e';
+  ctx.roundRect(0, 0, SIZE, SIZE, 16);
+  ctx.fill();
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath(); ctx.moveTo(i * CELL, 16); ctx.lineTo(i * CELL, SIZE - 16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(16, i * CELL); ctx.lineTo(SIZE - 16, i * CELL); ctx.stroke();
+  }
+
+  // Cells
+  for (let i = 0; i < 9; i++) {
+    if (!board[i]) continue;
+    const { x, y } = cellCenter(i);
+    if (board[i] === 'X') drawX(x, y);
+    else drawO(x, y);
+  }
+
+  // Win line
+  if (winLine) {
+    const from = cellCenter(winLine[0]);
+    const to   = cellCenter(winLine[2]);
+    const prog = Math.min(1, (animFrame - 10) / 20);
+    if (prog > 0) {
+      ctx.strokeStyle = '#e94560';
+      ctx.lineWidth = 5;
+      ctx.shadowColor = '#e94560';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(from.x + (to.x - from.x) * prog, from.y + (to.y - from.y) * prog);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  animFrame++;
+  if (!gameOver || winLine) requestAnimationFrame(draw);
+}
+
+function drawX(x, y) {
+  const r = CELL * 0.3;
+  ctx.strokeStyle = '#e94560';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = '#e94560';
+  ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r, y - r); ctx.lineTo(x - r, y + r); ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function drawO(x, y) {
+  const r = CELL * 0.3;
+  ctx.strokeStyle = '#457b9d';
+  ctx.lineWidth = 8;
+  ctx.shadowColor = '#457b9d';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+canvas.addEventListener('click', e => {
+  if (gameOver) return;
+  if (vsComputer && currentPlayer === 'O') return;
+
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = SIZE / rect.width;
+  const scaleY = SIZE / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+
+  const col = Math.floor(mx / CELL);
+  const row = Math.floor(my / CELL);
+  const idx = row * 3 + col;
+
+  if (board[idx]) return;
+  makeMove(idx);
+});
+
+function makeMove(idx) {
+  board[idx] = currentPlayer;
+  const result = checkWinner(board);
+
+  if (result) {
+    endGame(result);
+    return;
+  }
+
+  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+  document.getElementById('status').textContent = `${currentPlayer}'s turn`;
+
+  if (vsComputer && currentPlayer === 'O' && !gameOver) {
+    setTimeout(() => {
+      const move = bestMove([...board]);
+      makeMove(move);
+    }, 350);
+  }
+}
+
+function endGame(result) {
+  gameOver = true;
+  winLine = result.line;
+  animFrame = 0;
+
+  if (result.winner === 'tie') {
+    scores.tie++;
+    document.getElementById('status').textContent = "It's a tie!";
+    document.getElementById('ties').textContent = scores.tie;
+  } else {
+    scores[result.winner]++;
+    document.getElementById('status').textContent = `${result.winner} wins!`;
+    document.getElementById(result.winner === 'X' ? 'xWins' : 'oWins').textContent = scores[result.winner];
+  }
+
+  requestAnimationFrame(draw);
+  setTimeout(resetBoard, 2200);
+}
+
+function resetBoard() {
+  board = Array(9).fill(null);
+  currentPlayer = 'X';
+  gameOver = false;
+  winLine = null;
+  animFrame = 0;
+  document.getElementById('status').textContent = "X's turn";
+  requestAnimationFrame(draw);
+}
+
+function resetGame() {
+  scores = { X: 0, O: 0, tie: 0 };
+  document.getElementById('xWins').textContent = '0';
+  document.getElementById('oWins').textContent = '0';
+  document.getElementById('ties').textContent = '0';
+  resetBoard();
+}
+
+function toggleMode() {
+  vsComputer = !vsComputer;
+  document.getElementById('modeBtn').textContent = `vs CPU: ${vsComputer ? 'ON' : 'OFF'}`;
+  resetBoard();
+}
+
+// Polyfill roundRect for older browsers
+if (!ctx.roundRect) {
+  ctx.roundRect = function(x, y, w, h, r) {
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    this.closePath();
+    return this;
+  };
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
